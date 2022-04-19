@@ -437,6 +437,21 @@ void Copter::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
+    GCS_MAVLINK_Copter* link = copter._gcs.chan(MAVLINK_COMM_3);
+
+    //consider sending metadata
+    if(link->is_connected())
+    {
+        if(!link->xvd_is_stream())
+            link->enable_sending_meta();
+    }
+    else    
+    {
+        if(link->xvd_is_stream())
+            link->disable_sending_meta();
+    }
+    
+
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(DATA_AP_STATE, ap.value);
     }

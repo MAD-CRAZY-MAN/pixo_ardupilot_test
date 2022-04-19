@@ -89,6 +89,14 @@ void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *chan, float 
     out = constrain_float(out, radians(min*0.01f), radians(max*0.01f));
 }
 
+void AP_Mount_Backend::update_targets_from_pixorc()
+{
+    const RC_Channel *pan_ch = rc().channel(_state._pan_rc_in - 1);
+    const RC_Channel *tilt_ch = rc().channel(_state._tilt_rc_in - 1);
+    pan_pixo = pan_ch->norm_input_dz();
+    tilt_pixo = tilt_ch->norm_input_dz();
+}
+
 // update_targets_from_rc - updates angle targets using input from receiver
 void AP_Mount_Backend::update_targets_from_rc()
 {

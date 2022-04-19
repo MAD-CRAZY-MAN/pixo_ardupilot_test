@@ -65,6 +65,14 @@ public:
     GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
 
+    ///////////////////nsh
+    bool xvd_is_stream(){return state_meta; } 
+    void enable_sending_meta(); 
+    void disable_sending_meta();
+    bool is_connected();
+    uint32_t heartbeat_timer_ms = 0;
+    ///////////////////nsh
+
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
     bool        init(uint8_t instance);
@@ -446,6 +454,10 @@ protected:
     void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
 private:
+    ///////////////////nsh
+    bool state_meta = false; 
+    bool connect_state = false;
+    ///////////////////nsh
 
     void log_mavlink_stats();
 

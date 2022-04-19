@@ -79,7 +79,7 @@ public:
     virtual void send_gimbal_report(const mavlink_channel_t chan) {}
 
 protected:
-
+    void update_targets_from_pixorc();
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
     void update_targets_from_rc();
 
@@ -96,7 +96,8 @@ protected:
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
-
+    float pan_pixo; //nsh
+    float tilt_pixo;
 private:
 
     void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;

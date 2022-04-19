@@ -15,7 +15,7 @@ void AP_Mount_SToRM32::update()
 {
     // exit immediately if not initialised
     if (!_initialised) {
-        find_gimbal();
+        find_gimbal(); //nsh
         return;
     }
 
@@ -53,7 +53,7 @@ void AP_Mount_SToRM32::update()
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
             // update targets using pilot's rc inputs
-            update_targets_from_rc();
+            update_targets_from_pixorc();
             resend_now = true;
             break;
 
@@ -72,7 +72,8 @@ void AP_Mount_SToRM32::update()
 
     // resend target angles at least once per second
     if (resend_now || ((AP_HAL::millis() - _last_send) > AP_MOUNT_STORM32_RESEND_MS)) {
-        send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
+        //send_do_mount_control(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z), MAV_MOUNT_MODE_MAVLINK_TARGETING);
+        send_observation_rate();
     }
 }
 
@@ -118,6 +119,10 @@ void AP_Mount_SToRM32::find_gimbal()
     if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, _sysid, _compid, _chan)) {
         _initialised = true;
     }
+    _initialised = true;
+    _sysid = 1;
+    _compid = 195;
+    _chan = MAVLINK_COMM_3;
 }
 
 // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
@@ -151,4 +156,33 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
 
     // store time of send
     _last_send = AP_HAL::millis();
+}
+
+void AP_Mount_SToRM32::send_observation_rate()
+{
+    if(!_initialised) {
+        return;
+    }
+
+    if(!HAVE_PAYLOAD_SPACE(_chan, COMMAND_LONG)) {
+        return;
+    }
+    if(pan_pixo <= 0.1 && pan_pixo >= -0.1)
+        pan_pixo = 0.0;
+    if(tilt_pixo <= 0.1 && tilt_pixo >= -0.1)
+        tilt_pixo = 0.0;
+    tilt_pixo = tilt_pixo * -1;
+    mavlink_msg_command_long_send(_chan,
+                                    _sysid,
+                                    _compid,
+                                        MAV_CMD_DO_SET_OBSERVATION_RATE,
+                                        0,
+                                        pan_pixo,
+                                        tilt_pixo,
+                                        0,
+                                        0, 0, 0, 0);
+    _last_send = AP_HAL::millis();
+    //gcs().send_text(MAV_SEVERITY_INFO, "Pan: %f", pan_pixo);
+    //gcs().send_text(MAV_SEVERITY_INFO, "Tilt: %f", tilt_pixo);
+
 }

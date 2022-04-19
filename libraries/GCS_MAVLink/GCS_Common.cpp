@@ -809,6 +809,10 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // No ID we return true for may take more than a few hundred
     // microseconds to return!
 
+    if (id == MSG_HEARTBEAT || id == MSG_NEXT_PARAM) {
+        return true;
+    }
+
     if (in_hil_mode()) {
         // in HIL we need to keep sending servo values to ensure
         // the simulator doesn't pause, otherwise our sensor
@@ -817,15 +821,6 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
             id == MSG_SERVO_OUTPUT_RAW) {
             return true;
         }
-    }
-
-    switch (id) {
-        case MSG_HEARTBEAT:
-        case MSG_NEXT_PARAM:
-        case MSG_AUTOPILOT_VERSION:
-            return true;
-        default:
-            return false;
     }
 
     return false;
@@ -1015,6 +1010,30 @@ int8_t GCS_MAVLINK::deferred_message_to_send_index()
     return next_deferred_message_to_send_cache;
 }
 
+void GCS_MAVLINK::enable_sending_meta(){
+        set_mavlink_message_id_interval(30, 33); 
+        set_mavlink_message_id_interval(2, 33);
+        set_mavlink_message_id_interval(33, 33);
+        state_meta = true;
+} //nsh
+
+void GCS_MAVLINK::disable_sending_meta(){
+    set_mavlink_message_id_interval(30, 0);
+    set_mavlink_message_id_interval(2, 0);
+    set_mavlink_message_id_interval(33, 0);
+    state_meta = false; 
+} //nsh
+
+bool GCS_MAVLINK::is_connected()
+{
+    if((AP_HAL::millis()-heartbeat_timer_ms)>(uint32_t)5000)
+        connect_state = false;
+    else
+        connect_state = true;
+    
+    return connect_state;
+} //nsh
+
 void GCS_MAVLINK::update_send()
 {
     if (!hal.scheduler->in_delay_callback()) {
@@ -1034,7 +1053,6 @@ void GCS_MAVLINK::update_send()
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     uint32_t retry_deferred_body_start = AP_HAL::micros();
 #endif
-
     const uint32_t start = AP_HAL::millis();
     while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
